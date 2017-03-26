@@ -7,63 +7,25 @@
  * @package sparkling
  */
 
-if ( ! function_exists( 'sparkling_paging_nav' ) ) :
 /**
- * Display navigation to next/previous set of posts when applicable.
- *
- * @return void
+ * Customize the PageNavi HTML before it is output to support bootstrap
  */
-function sparkling_paging_nav() {
-	// Don't print empty markup if there's only one page.
-	if ( $GLOBALS['wp_query']->max_num_pages < 2 ) {
-		return;
-	}
-	?>
-	<nav class="navigation paging-navigation" role="navigation">
-		<h1 class="screen-reader-text"><?php _e( 'Posts navigation', 'sparkling' ); ?></h1>
-		<div class="nav-links">
+function sparkling_wp_pagenavi_bootstrap_markup( $html ) {
+	$out = '';
 
-			<?php if ( get_next_posts_link() ) : ?>
-			<div class="nav-previous"> <?php next_posts_link( __( '<i class="fa fa-chevron-left"></i> Older posts', 'sparkling' ) ); ?></div>
-			<?php endif; ?>
+	//wrap a's and span's in li's
+	$out = str_replace( "<div", "", $html );
+	$out = str_replace( "class='wp-pagenavi'>", "", $out );
+	$out = str_replace( "<a", "<li><a", $out );
+	$out = str_replace( "</a>", "</a></li>", $out );
+	$out = str_replace( "<span", "<li><span", $out );
+	$out = str_replace( "</span>", "</span></li>", $out );
+	$out = str_replace( "</div>", "", $out );
 
-			<?php if ( get_previous_posts_link() ) : ?>
-			<div class="nav-next"><?php previous_posts_link( __( 'Newer posts <i class="fa fa-chevron-right"></i>', 'sparkling' ) ); ?> </div>
-			<?php endif; ?>
-
-		</div><!-- .nav-links -->
-	</nav><!-- .navigation -->
-	<?php
+	return '<ul class="pagination pagination-centered wp-pagenavi-pagination">' . $out . '</ul>';
 }
-endif;
+add_filter( 'wp_pagenavi', 'sparkling_wp_pagenavi_bootstrap_markup' );
 
-if ( ! function_exists( 'sparkling_post_nav' ) ) :
-/**
- * Display navigation to next/previous post when applicable.
- *
- * @return void
- */
-function sparkling_post_nav() {
-	// Don't print empty markup if there's nowhere to navigate.
-	$previous = ( is_attachment() ) ? get_post( get_post()->post_parent ) : get_adjacent_post( false, '', true );
-	$next     = get_adjacent_post( false, '', false );
-
-	if ( ! $next && ! $previous ) {
-		return;
-	}
-	?>
-	<nav class="navigation post-navigation" role="navigation">
-		<h1 class="screen-reader-text"><?php _e( 'Post navigation', 'sparkling' ); ?></h1>
-		<div class="nav-links">
-			<?php
-				previous_post_link( '<div class="nav-previous">%link</div>', _x( '<i class="fa fa-chevron-left"></i> %title', 'Previous post link', 'sparkling' ) );
-				next_post_link(     '<div class="nav-next">%link</div>',     _x( '%title <i class="fa fa-chevron-right"></i>', 'Next post link',     'sparkling' ) );
-			?>
-		</div><!-- .nav-links -->
-	</nav><!-- .navigation -->
-	<?php
-}
-endif;
 
 
 if ( ! function_exists( 'sparkling_posted_on' ) ) :
@@ -98,21 +60,23 @@ endif;
 
 /**
  * Returns true if a blog has more than 1 category.
+ *
+ * @return bool
  */
 function sparkling_categorized_blog() {
-	if ( false === ( $all_the_cool_cats = get_transient( 'all_the_cool_cats' ) ) ) {
+	if ( false === ( $all_the_cool_cats = get_transient( 'sparkling_categories' ) ) ) {
 		// Create an array of all the categories that are attached to posts.
 		$all_the_cool_cats = get_categories( array(
+			'fields'     => 'ids',
 			'hide_empty' => 1,
+			// We only need to know if there is more than one category.
+			'number'     => 2,
 		) );
-
 		// Count the number of categories that are attached to the posts.
 		$all_the_cool_cats = count( $all_the_cool_cats );
-
-		set_transient( 'all_the_cool_cats', $all_the_cool_cats );
+		set_transient( 'sparkling_categories', $all_the_cool_cats );
 	}
-
-	if ( '1' != $all_the_cool_cats ) {
+	if ( $all_the_cool_cats > 1 ) {
 		// This blog has more than 1 category so sparkling_categorized_blog should return true.
 		return true;
 	} else {
@@ -120,13 +84,15 @@ function sparkling_categorized_blog() {
 		return false;
 	}
 }
-
 /**
  * Flush out the transients used in sparkling_categorized_blog.
  */
 function sparkling_category_transient_flusher() {
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+		return;
+	}
 	// Like, beat it. Dig?
-	delete_transient( 'all_the_cool_cats' );
+	delete_transient( 'sparkling_categories' );
 }
 add_action( 'edit_category', 'sparkling_category_transient_flusher' );
 add_action( 'save_post',     'sparkling_category_transient_flusher' );

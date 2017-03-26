@@ -7,10 +7,9 @@
  * @package sparkling
  */
 ?>
-			</div><!-- close .*-inner (main-content or sidebar, depending if sidebar is used) -->
 		</div><!-- close .row -->
 	</div><!-- close .container -->
-</div><!-- close .main-content -->
+</div><!-- close .site-content -->
 
 	<div id="footer-area">
 		<div class="container footer-inner">
@@ -22,7 +21,7 @@
 		<footer id="colophon" class="site-footer" role="contentinfo">
 			<div class="site-info container">
 				<div class="row">
-					<?php sparkling_social(); ?>
+					<?php if( of_get_option('footer_social') ) sparkling_social_icons(); ?>
 					<nav role="navigation" class="col-md-6">
 						<?php sparkling_footer_links(); ?>
 					</nav>
